@@ -1,0 +1,12 @@
+# Artefactos de compilación de Arduino
+build/
+_build/
+*.hex
+*.elf
+*.map
+*.bin
+
+# Sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
