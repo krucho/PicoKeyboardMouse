@@ -35,8 +35,11 @@ El resto de las carpetas son **material de referencia y versiones preliminares**
 - **Configuración de placa:**
   - Board: `Raspberry Pi Pico W`
   - USB Stack: `Pico SDK` (necesario para `Keyboard.h` / `Mouse.h`)
+  - **Flash Size:** `2MB (Sketch: 1984KB, FS: 64KB)` u otra opción **con FS** (obligatorio para guardar WiFi)
 
 No se usan librerías externas: todo corre con WiFi, WebServer, Keyboard, Mouse y (en la variante WiFi) LittleFS + DNSServer + SimpleMDNS del core.
+
+> **Importante:** si compilás vos, no uses `2MB (no FS)`. Sin partición de archivos, LittleFS no puede guardar `/wifi.cfg` y el portal dirá que no se pudo guardar la config. El `.uf2` incluido en el repo ya viene compilado con FS de 64 KB.
 
 ---
 
@@ -56,7 +59,8 @@ En [`PicoKeyboardMouseWiFi`](PicoKeyboardMouseWiFi/) se incluye `PicoKeyboardMou
 ### Opción 2 — Compilar desde Arduino IDE
 
 1. Instalá el core arduino-pico y seleccioná Board `Raspberry Pi Pico W` + USB Stack `Pico SDK`.
-2. Abrí `PicoKeyboardMouseWiFi/PicoKeyboardMouseWiFi.ino` y subí el sketch.
+2. En **Tools → Flash Size**, elegí **`2MB (Sketch: 1984KB, FS: 64KB)`** (u otra con FS; **no** uses `2MB (no FS)`).
+3. Abrí `PicoKeyboardMouseWiFi/PicoKeyboardMouseWiFi.ino` y subí el sketch.
 
 ---
 

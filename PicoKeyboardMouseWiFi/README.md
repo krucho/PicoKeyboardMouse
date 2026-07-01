@@ -19,6 +19,8 @@ Este directorio incluye `PicoKeyboardMouseWiFi.uf2` ya compilado. No necesitás 
 
 Abrí `PicoKeyboardMouseWiFi.ino` (Board: **Raspberry Pi Pico W**, USB Stack: **Pico SDK**) y subí el sketch.
 
+**Flash Size obligatorio:** en **Tools → Flash Size** elegí **`2MB (Sketch: 1984KB, FS: 64KB)`** u otra opción que incluya FS. Con `2MB (no FS)` el portal no puede guardar la WiFi.
+
 ## Flujo de uso
 
 ### Primera vez (sin credenciales guardadas)
@@ -72,6 +74,7 @@ Sigue siendo **HTTP + `fetch()`**, sin WebSockets. Mismos endpoints (`/key`, `/m
 
 ## Troubleshooting
 
+- **"No se pudo guardar" al configurar WiFi:** el firmware no tiene partición de archivos (LittleFS). Re-flasheá el `PicoKeyboardMouseWiFi.uf2` del repo, o si compilás: **Tools → Flash Size → 2MB (Sketch: 1984KB, FS: 64KB)** — no uses `2MB (no FS)`.
 - **No conecta a mi WiFi después de configurar:** revisá SSID/contraseña; si falla, vuelve sola al modo setup tras 20 s de timeout.
 - **`picokm.local` no abre:** algunos dispositivos (Android viejos) no resuelven mDNS. Usá la IP que muestra la página/banner, o buscá `picokm` en la lista de clientes DHCP del router.
 - **No sé la IP y no tengo la web:** mantené **BOOTSEL ~3 s** para volver al portal y reconfigurar, o abrí el monitor serie USB (115200 baud) tras el reinicio.

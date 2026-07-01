@@ -786,6 +786,10 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 </html>
 )HTML";
 
+static uint32_t littleFsPartitionBytes() {
+  return (uint32_t)(FS_END - FS_START);
+}
+
 bool findSpecialKey(const String &name, uint8_t &code) {
   for (size_t i = 0; i < sizeof(SPECIAL_KEYS) / sizeof(SPECIAL_KEYS[0]); i++) {
     if (name == SPECIAL_KEYS[i].name) {
@@ -904,13 +908,28 @@ void handleRoot() {
 bool ensureLittleFS() {
   static bool ready = false;
   if (ready) return true;
+
+  const uint32_t partBytes = littleFsPartitionBytes();
+  if (partBytes == 0) {
+    Serial.println("LittleFS: sin particion FS en flash (Flash Size = no FS).");
+    Serial.println("  Arduino IDE: Tools -> Flash Size -> 2MB (Sketch: 1984KB, FS: 64KB)");
+    return false;
+  }
+
   ready = LittleFS.begin();
   if (!ready) {
     Serial.println("LittleFS: formateando...");
     ready = LittleFS.format() && LittleFS.begin();
   }
-  if (!ready) Serial.println("LittleFS: no se pudo montar");
-  return ready;
+  if (!ready) {
+    Serial.println("LittleFS: no se pudo montar");
+    return false;
+  }
+
+  Serial.print("LittleFS: ");
+  Serial.print(partBytes);
+  Serial.println(" bytes disponibles");
+  return true;
 }
 
 bool loadWifiCreds(String &ssid, String &pass) {
@@ -1002,6 +1021,21 @@ void startConfigPortal() {
   Serial.println(apIp.toString());
 }
 
+void handleWifiFsStatus() {
+  if (littleFsPartitionBytes() == 0) {
+    server.send(200, "text/plain",
+                "err:El firmware no tiene particion de archivos (LittleFS). "
+                "Re-flashea PicoKeyboardMouseWiFi.uf2 actualizado del repo.");
+    return;
+  }
+  if (!ensureLittleFS()) {
+    server.send(200, "text/plain",
+                "err:No se pudo montar LittleFS. Reinicia la Pico o vuelve a flashear el firmware.");
+    return;
+  }
+  server.send(200, "text/plain", "ok");
+}
+
 void handleWifiSave() {
   if (!server.hasArg("ssid")) {
     server.send(400, "text/plain", "missing ssid");
@@ -1019,7 +1053,17 @@ void handleWifiSave() {
   }
 
   if (!saveWifiCreds(ssid, pass)) {
-    server.send(500, "text/plain", "no se pudo guardar");
+    String err = "No se pudo guardar la configuracion WiFi.";
+    if (littleFsPartitionBytes() == 0) {
+      err += " El firmware fue compilado sin particion de archivos (Flash Size: no FS). "
+             "Re-flashea el PicoKeyboardMouseWiFi.uf2 actualizado del repositorio.";
+    } else {
+      err += " LittleFS no respondio; reinicia la Pico e intenta de nuevo.";
+    }
+    server.send(500, "text/html; charset=utf-8",
+                "<!doctype html><html><body style='font-family:sans-serif;background:#111;color:#eee;padding:24px'>"
+                "<h1>Error al guardar</h1><p>" + err + "</p>"
+                "<p><a href='/' style='color:#ffd166'>Volver</a></p></body></html>");
     return;
   }
 
@@ -1221,6 +1265,7 @@ void registerServerRoutes() {
   server.on("/wifi/save", HTTP_POST, handleWifiSave);
   server.on("/wifi/reset", HTTP_GET, handleWifiReset);
   server.on("/wifi/scan", HTTP_GET, handleWifiScan);
+  server.on("/wifi/fsstatus", HTTP_GET, handleWifiFsStatus);
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/generate_204", HTTP_GET, handleCaptiveProbe);
   server.on("/hotspot-detect.html", HTTP_GET, handleCaptiveProbe);
@@ -1263,6 +1308,7 @@ void setup() {
       Serial.println("Sin credenciales guardadas; modo configuracion");
     }
     startConfigPortal();
+    ensureLittleFS();
   } else {
     configMode = false;
     startMdns();
